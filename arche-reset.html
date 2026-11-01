@@ -145,7 +145,7 @@ const tile=(i,j)=>(i<0||j<0||i>=MW||j>=MH)?'#':map[j][i];
 const blocks=(i,j)=>{const c=tile(i,j);if(c==='#'||c==='E')return true;if(c==='S')return doorAt[j*MW+i].open<.9;return false;};   // 시야·총알·몸을 막는 것
 const walkP=(i,j)=>!blocks(i,j)&&tile(i,j)!=='b';
 const walkM=(i,j)=>!blocks(i,j)&&tile(i,j)!=='b'&&tile(i,j)!=='V';   // 괴물은 배기구에 못 들어온다
-const passM=(i,j)=>tile(i,j)==='S'?!doorAt[j*MW+i].locked:walkM(i,j); // 길찾기용: 닫힌 문은 열고 지나간다
+const passM=walkM; // 길찾기용: 문은 플레이어만 연다 — 괴물은 열린 문으로만 지나간다
 const hash=(i,j)=>((i*73856093)^(j*19349663))>>>0;
 
 function buildMap(){
@@ -239,7 +239,10 @@ const SFX={
   step(){noise(.05,.07,500);},
   door(v=1){if(play('door',.7*v))return;tone(60,.8,'sawtooth',.3*v,40);noise(.6,.3*v,400);},
   page(){noise(.12,.15,3000);},
-  hit(){noise(.08,.3,1500);tone(200,.1,'sawtooth',.15,90);}
+  hit(){noise(.08,.3,1500);tone(200,.1,'sawtooth',.15,90);},
+  swing(){noise(.14,.12,900);},
+  punch(){noise(.07,.45,600);tone(95,.12,'sine',.5,55);},
+  thud(){noise(.06,.25,350);tone(70,.08,'sine',.3,50);}
 };
 
 // ───────── 입력 ─────────
@@ -302,7 +305,7 @@ function newGame(){
   M(30,27);M(44,33);M(14,30);M(36,24);M(31,8,{state:'dormant'});
 }
 function start(){initAudio();playCut('cut_wake',['……','차갑다.','누군가 나를 불렀던 것 같은데.','내 이름이… 뭐였지?'],toPlay);}
-function toPlay(){scene='play';tryLock();if(!G.started){G.started=true;sub('…여긴 어디지.',3);sub('클릭: 마우스 고정 · WASD 이동 · F 손전등 · E 살펴보기 · Tab 지도',6);}}
+function toPlay(){scene='play';tryLock();if(!G.started){G.started=true;sub('…여긴 어디지.',3);sub('클릭: 마우스 고정 · WASD 이동 · 클릭/스페이스 공격(맨손은 주먹, V 주먹) · F 손전등 · E 살펴보기 · Tab 지도',7);}}
 function restart(){newGame();G.player.wake=1.2;G.started=true;scene='play';}
 function sub(text,dur=3.6){G.subs.push({text,t:dur});}
 
@@ -348,7 +351,7 @@ function update(dt){
   if(moving){p.step+=sp*dt*2.2;G.stepAcc+=sp*dt;if(G.stepAcc>(sprint?1.1:1.4)){G.stepAcc=0;if(!inVent)SFX.step();}}
   const wakeK=p.wake>0?1-p.wake/3.2:1;
   p.z=lerp(p.z,inVent?.24:.5,dt*6);
-  p.cd-=dt;p.recoil=Math.max(0,p.recoil-dt*5);G.flashT-=dt;G.shake=Math.max(0,G.shake-dt*20);G.hurt=Math.max(0,G.hurt-dt);
+  p.cd-=dt;p.punch=Math.max(0,(p.punch||0)-dt);p.recoil=Math.max(0,p.recoil-dt*5);G.flashT-=dt;G.shake=Math.max(0,G.shake-dt*20);G.hurt=Math.max(0,G.hurt-dt);
   G.wakeK=wakeK;
 
   // 노화 (시간 + 진실을 알수록)
@@ -389,8 +392,9 @@ function update(dt){
 }
 
 function doorBusy(d){
-  const near=e=>Math.hypot(e.x-d.i-.5,e.y-d.j-.5)<.85;
-  if(near(G.player))return true;for(const m of G.mons)if(!m.dead&&m.state!=='dormant'&&near(m))return true;return false;
+  // 괴물은 문을 열지 못하지만, 문간에 끼어 있으면 닫히지 않는다
+  const near=(e,r)=>Math.hypot(e.x-d.i-.5,e.y-d.j-.5)<r;
+  if(near(G.player,.85))return true;for(const m of G.mons)if(!m.dead&&m.state!=='dormant'&&near(m,.6))return true;return false;
 }
 function updateDoors(dt){
   for(const d of doors){
@@ -447,7 +451,7 @@ function follow(m,speed,dt,chase){
   const p=G.player;let tx,ty;
   if(m.path&&m.path.length){[tx,ty]=m.path[0];if(Math.hypot(tx-m.x,ty-m.y)<.15){m.path.shift();if(!m.path.length)return;[tx,ty]=m.path[0];}
     const di=Math.floor(tx),dj=Math.floor(ty);
-    if(tile(di,dj)==='S'){const d=doorAt[dj*MW+di];if(d.open<.9){openDoor(d,false);return;}}}   // 괴물도 문을 연다
+    if(tile(di,dj)==='S'&&doorAt[dj*MW+di].open<.9){m.path=null;return;}}   // 그새 문이 닫혔다 — 문 앞에서 멈춘다
   else if(chase){tx=p.x;ty=p.y;}else return;
   if(chase&&Math.hypot(p.x-m.x,p.y-m.y)<1.2){tx=p.x;ty=p.y;}
   const dx=tx-m.x,dy=ty-m.y,l=Math.hypot(dx,dy)||1;moveEnt(m,dx/l*speed*dt,dy/l*speed*dt,walkM);
@@ -457,7 +461,7 @@ function makeNoise(r){const p=G.player;for(const m of G.mons){if(m.dead)continue
 
 function shoot(){
   const p=G.player;if(p.wake>0)return;const w=p.weapon;
-  if(!p.has[w]){if(G.t>(G.handMsg||0)){G.handMsg=G.t+4;sub('맨손이다. 무기가 될 만한 걸 찾아야 한다.');}return;}
+  if(!p.has[w]){punch();return;}
   if(p.cd>0)return;
   if(p.ammo[w]<=0){SFX.empty();p.cd=.3;sub('탄이 없다.',1.5);return;}
   p.ammo[w]--;p.cd=w?.95:.38;G.flashT=.07;p.recoil=1;G.shake=w?7:3.5;(w?SFX.shotgun:SFX.pistol)();makeNoise(16);
@@ -473,6 +477,22 @@ function shoot(){
       moveEnt(hit,dx*.12,dy*.12,walkM);
       if(hit.hp<=0&&!hit.dead){hit.dead=true;G.stats.kills++;SFX.growl(.15);}}
   }
+}
+// 주먹 — 사거리 짧고 약하지만 밀쳐내고 잠깐 멈추게 한다. 늙을수록 힘이 빠진다
+function punch(){
+  const p=G.player;if(p.wake>0||p.cd>0||p.punch>0)return;
+  p.cd=p.tired?.75:.5;p.punch=.32;p.sta=Math.max(0,p.sta-9);SFX.swing();makeNoise(4);
+  const dx=Math.cos(p.ang),dy=Math.sin(p.ang),pow=clamp(1-G.age/90,.45,1);
+  let hit=null,hd=1.15;
+  for(const m of G.mons){if(m.dead)continue;const ox=m.x-p.x,oy=m.y-p.y,al=ox*dx+oy*dy;if(al<=0||al>hd+m.r)continue;
+    if(Math.abs(ox*dy-oy*dx)<m.r+.3){hit=m;hd=al;}}
+  if(hit){
+    if(hit.state==='dormant')wakeMon(hit);
+    hit.hp-=1;hit.stun=.55*pow;hit.hes=true;G.shake=4;SFX.punch();
+    if(hit.state!=='chase')hit.state='chase';
+    moveEnt(hit,dx*.35*pow,dy*.35*pow,walkM);
+    if(hit.hp<=0&&!hit.dead){hit.dead=true;G.stats.kills++;SFX.growl(.15);}
+  }else if(blocks(Math.floor(p.x+dx*.8),Math.floor(p.y+dy*.8))){G.shake=2;SFX.thud();}
 }
 function useMed(){const p=G.player;if(p.med<=0||p.hp>=100)return;p.med--;p.hp=Math.min(100,p.hp+45);SFX.pick();sub('구급상자를 썼다. 상처가 조금 아문다.',2);}
 
@@ -515,6 +535,7 @@ function onKey(c){
   if(c==='KeyH')useMed();
   if(c==='Tab')G.map=!G.map;
   if(c==='Space')shoot();
+  if(c==='KeyV')punch();
 }
 
 // ───────── 렌더링: 레이캐스터 ─────────
@@ -629,6 +650,14 @@ function drawHands(){
   const bob=Math.sin(p.step*.5)*3*G.moveAmt,by=H+Math.abs(Math.cos(p.step*.5))*3*G.moveAmt+p.recoil*12;
   const marks=(x,y)=>{if(a>.35){g.strokeStyle='rgba(80,60,50,.6)';g.lineWidth=.6;for(let i=0;i<3;i++){g.beginPath();g.moveTo(x-4,y+i*2);g.quadraticCurveTo(x,y+i*2-1,x+4,y+i*2);g.stroke();}}
     if(a>.7){g.fillStyle='rgba(110,80,55,.8)';g.fillRect(x-2,y+6,2,2);g.fillRect(x+3,y+3,1.5,1.5);}};
+  // 왼주먹: 휘두르는 동안만 화면 왼쪽 아래에서 튀어나온다
+  if(p.punch>0){
+    const e=Math.sin(Math.PI*(1-p.punch/.32)),fx=W*.2+e*W*.2+bob,fy=H+14-e*72;
+    g.fillStyle='#d8d6cf';g.beginPath();g.moveTo(fx-26,H+10);g.lineTo(fx-12,fy+8);g.lineTo(fx+12,fy+12);g.lineTo(fx+8,H+10);g.fill();
+    g.fillStyle=skin;g.beginPath();g.ellipse(fx,fy,15-e*2,13-e*2,-.3,0,7);g.fill();
+    g.strokeStyle='rgba(90,60,45,.55)';g.lineWidth=1;for(let i=-1;i<=1;i++){g.beginPath();g.moveTo(fx-6+i*5,fy-9);g.lineTo(fx-4+i*5,fy-2);g.stroke();}
+    marks(fx+2,fy+2);
+  }
   if(!p.has[p.weapon]){
     const x=W*.6+bob,y=by-34;
     g.fillStyle='#d8d6cf';g.beginPath();g.moveTo(x+30,H);g.lineTo(x+8,y+16);g.lineTo(x+22,y+12);g.lineTo(x+48,H);g.fill();
