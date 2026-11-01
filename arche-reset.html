@@ -128,6 +128,12 @@ function makeTextures(){
   TX.gurneyE=mk(64,36,g=>{g.strokeStyle='#9aa0a2';g.lineWidth=2;g.beginPath();g.moveTo(8,20);g.lineTo(8,32);g.moveTo(56,20);g.lineTo(56,32);g.stroke();
     g.fillStyle='#2a2a2a';g.beginPath();g.arc(8,33,3,0,7);g.arc(56,33,3,0,7);g.fill();g.fillStyle='#b0b6b8';g.fillRect(3,19,58,3);
     g.fillStyle='#d6d6cf';g.fillRect(4,15,56,5);g.strokeStyle='#5a3a2a';g.lineWidth=1;g.beginPath();g.moveTo(10,17);g.lineTo(2,28);g.moveTo(54,17);g.lineTo(62,28);g.stroke();});
+  TX.corpseDoc=mk(64,24,g=>{g.fillStyle='#4f0707';g.beginPath();g.ellipse(30,19,28,5,0,0,7);g.fill();
+    g.fillStyle='#d9dbd4';g.fillRect(10,9,38,10);g.fillStyle='#bfc2ba';g.fillRect(12,15,36,4);g.fillStyle='#3a3f4a';g.fillRect(4,15,10,5);
+    g.fillStyle='#c9ad96';g.beginPath();g.arc(53,12,6,0,7);g.fill();g.fillStyle='#2a2420';g.fillRect(49,6,9,4);
+    g.fillStyle='rgba(120,10,10,.85)';g.fillRect(24,10,10,6);});
+  TX.cuffKey=mk(16,16,g=>{g.fillStyle='#e8d070';g.beginPath();g.arc(5,8,3.5,0,7);g.fill();g.fillStyle='#1a1a1a';g.beginPath();g.arc(5,8,1.5,0,7);g.fill();
+    g.fillStyle='#e8d070';g.fillRect(8,7,7,2);g.fillRect(12,9,2,3);g.fillStyle='rgba(255,250,210,.9)';g.fillRect(3,5,2,1);});
   TX.paper=mk(32,20,g=>{g.fillStyle='#4a3a2a';g.fillRect(2,12,28,8);g.fillStyle='#f0ede2';g.fillRect(6,2,20,12);g.fillStyle='#8a8a80';for(let i=4;i<12;i+=2)g.fillRect(8,i,14,1);g.fillStyle='#8a0a0a';g.fillRect(18,9,5,3);});
   TX.rec=mk(24,16,g=>{g.fillStyle='#4a3a2a';g.fillRect(0,10,24,6);g.fillStyle='#161616';g.fillRect(5,3,14,8);g.fillStyle='#ff2020';g.fillRect(15,5,2,2);g.fillStyle='#555';g.fillRect(7,5,6,3);});
   TX.ammo=mk(32,20,g=>{g.fillStyle='#3e4a2a';g.fillRect(4,6,24,14);g.fillStyle='#55633a';g.fillRect(4,6,24,3);g.fillStyle='#c9a640';g.fillRect(12,11,8,3);});
@@ -269,6 +275,7 @@ const SFX={
   swing(){noise(.14,.12,900);},
   punch(){noise(.07,.45,600);tone(95,.12,'sine',.5,55);},
   thud(){noise(.06,.25,350);tone(70,.08,'sine',.3,50);},
+  screech(){noise(.35,.18,1800);tone(620+Math.random()*120,.3,'sawtooth',.06,480);},
   rattle(){noise(.18,.22,2600);tone(240+Math.random()*80,.06,'square',.05);}
 };
 
@@ -334,6 +341,10 @@ function newGame(){
   const D=(x,y,tex,sw,sh)=>G.deco.push({x,y,tex,sw,sh});
   for(const [x,y] of [[8.5,3.5],[12.5,7.5],[4.5,8.8],[8.5,9.2],[13.5,3.2]])D(x,y,TX.gurney,1,.56);
   D(4.5,4.6,TX.gurneyE,1,.56);
+  // 오프닝: 침대에 묶인 채 깨어난다. 열쇠는 쓰러진 연구원의 허리춤에
+  D(6.25,8.35,TX.corpseDoc,1,.375);
+  G.bound={stage:'look',base:0,t:0,kicks:0,last:'',lastT:0,mv:0,hold:0,cuffs:0,key:{x:6.05,y:8.2},
+    from:{x:4.5,y:5.5},to:{x:5.65,y:7.55},prog:0,hint:0};
   for(const [x,y] of [[20.5,7.4],[23.6,16.5],[40.5,27.5],[27.5,30.6],[33.5,9.4]])D(x,y,TX.corpse,1,.375);
   for(let j=0;j<MH;j++)for(let i=0;i<MW;i++)if(map[j][i]==='b'){const r=rnd();D(i+.5,j+.5,r<.25?TX.bed1:r<.42?TX.bed2:TX.bed0,1,.5);}
   const M=(x,y,ex={})=>G.mons.push({x:x+.5,y:y+.5,r:.3,hp:5,state:'wander',dir:rnd()*6.28,t:rnd()*2,path:null,pt:0,lost:0,lx:0,ly:0,hes:false,atk:0,anim:rnd()*10,stun:0,dead:false,mark:0,moanT:3+rnd()*6,idle:false,...ex});
@@ -341,8 +352,63 @@ function newGame(){
   if(MONSTERS_ON){M(30,27);M(44,33);M(14,30);M(36,24);M(31,8,{state:'dormant'});}
 }
 function start(){initAudio();playCut('cut_wake',['……','차갑다.','누군가 나를 불렀던 것 같은데.','내 이름이… 뭐였지?'],toPlay);}
-function toPlay(){scene='play';tryLock();if(!G.started){G.started=true;sub('…여긴 어디지.',3);sub('클릭: 마우스 고정 · WASD 이동 · 클릭/스페이스 공격(맨손은 주먹, V 주먹) · F 손전등 · E 살펴보기 · Tab 지도',7);}}
-function restart(){newGame();G.player.wake=1.2;G.started=true;scene='play';}
+function toPlay(){scene='play';tryLock();if(!G.started){G.started=true;
+  if(G.bound){sub('…몸이 움직이지 않는다.',3);sub('양손이 침대 난간에 수갑으로 묶여 있다.',3.5);sub('마우스로 주위를 둘러보자.',5);}
+  else{sub('…여긴 어디지.',3);sub(HELP,7);}}}
+const HELP='클릭: 마우스 고정 · WASD 이동 · 클릭/스페이스 공격(맨손은 주먹, V 주먹) · F 손전등 · E 살펴보기 · Tab 지도';
+function restart(){newGame();freeFromBed(true);G.player.wake=1.2;G.started=true;scene='play';}
+
+// ───────── 오프닝 퍼즐: 침대에 묶인 채 ─────────
+// look(둘러보며 열쇠 발견) → brake(발로 바퀴 고정 레버 차기) → rock(A·D 번갈아 몸을 튕겨 침대 굴리기)
+// → toe(발가락으로 열쇠 집기, E 길게) → cuff(양손 수갑 풀기) → 일어선다
+const angDiff=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
+function updateBound(dt){
+  const B=G.bound,p=G.player;B.t+=dt;
+  p.ang=B.base+clamp(angDiff(p.ang,B.base),-1.75,1.75);           // 고개만 돌릴 수 있다
+  if(p.wake>0)return;
+  const toKey=Math.atan2(B.key.y-p.y,B.key.x-p.x),dk=Math.hypot(B.key.x-p.x,B.key.y-p.y);
+  const lookKey=Math.abs(angDiff(p.ang,toKey))<.3,down=p.pitch<-45;
+  B.prompt='';
+  if(B.mv>0){const k=Math.min(B.mv,dt*1.6);B.mv-=k;B.prog=Math.min(1,B.prog+k);p.x=lerp(B.from.x,B.to.x,B.prog);p.y=lerp(B.from.y,B.to.y,B.prog);
+    p.step+=dt*14;G.moveAmt=.6;}else G.moveAmt=lerp(G.moveAmt,0,dt*6);
+  if(B.stage==='look'){
+    if(lookKey&&dk<7){B.stage='brake';sub('…저기. 쓰러진 사람 허리춤에 뭔가 반짝인다.',3.2);sub('수갑 열쇠다. 하지만 손이 닿지 않는다.',3.2);sub('침대째 저기까지 갈 수만 있다면…',3.5);}
+    else if(B.t>14&&B.hint<1){B.hint=1;sub('바닥 쪽을, 오른쪽 아래를 잘 살펴보자.',4);}
+  }else if(B.stage==='brake'){
+    B.prompt=down?`[E] 발로 바퀴 고정 레버 차기  (${B.kicks}/3)`:'침대 바퀴가 고정돼 있다 — 발치를 내려다보자 (마우스 아래로)';
+  }else if(B.stage==='rock'){
+    B.prompt='[A] · [D] 번갈아 눌러 몸을 튕겨 침대를 민다  (리듬이 중요하다)';
+    if(B.prog>=1&&B.mv<=0){B.stage='toe';sub('시체 바로 옆까지 왔다.',2.5);sub('손은 묶여 있다… 발이라면 닿을지도 모른다.',3.5);}
+  }else if(B.stage==='toe'){
+    const ok=down&&Math.abs(angDiff(p.ang,toKey))<.75;
+    B.prompt=ok?'[E 길게] 발가락으로 열쇠 집기':'열쇠 쪽으로 고개를 돌려 발치를 내려다보자';
+    if(ok&&K.KeyE){B.hold+=dt;if(B.hold>=2){B.stage='cuff';B.gotKey=true;SFX.pick();sub('발가락에 열쇠가 걸렸다. 다리를 끌어올려… 손에 쥐었다.',3.5);}}
+    else if(B.hold>0){if(B.hold>.3)sub('열쇠가 발가락에서 미끄러졌다.',2);B.hold=0;}
+  }else if(B.stage==='cuff'){
+    B.prompt=B.cuffs===0?'[E] 왼손 수갑 풀기':'[E] 오른손 수갑 풀기';
+  }
+}
+function boundKey(c){
+  const B=G.bound,p=G.player;if(p.wake>0)return;
+  if(B.stage==='look'&&c==='KeyE'){SFX.rattle();G.shake=2;sub('수갑이 난간에 걸려 덜컹거릴 뿐이다.',2);}
+  if(B.stage==='brake'&&c==='KeyE'&&p.pitch<-45){B.kicks++;SFX.thud();G.shake=4;B.kickT=.3;
+    if(B.kicks>=3){B.stage='rock';tone(1800,.05,'square',.12);sub('딸깍 — 바퀴 고정이 풀렸다.',2.5);}}
+  if(B.stage==='rock'&&(c==='KeyA'||c==='KeyD')){
+    const gap=G.t-B.lastT;
+    if(c===B.last){SFX.rattle();}                                       // 같은 쪽만 누르면 흔들리기만 한다
+    else if(gap>.22&&gap<1.1){B.mv+=.13;SFX.screech();G.shake=3;}      // 좋은 리듬: 쭉 밀려간다
+    else{B.mv+=.04;SFX.rattle();G.shake=2;}                             // 너무 급하거나 느리면 조금만
+    B.last=c;B.lastT=G.t;B.lean=c==='KeyA'?-1:1;
+  }
+  if(B.stage==='cuff'&&c==='KeyE'){B.cuffs++;tone(2100,.04,'square',.12);setTimeout(()=>tone(1500,.05,'square',.1),70);
+    if(B.cuffs===1)sub('철컥. 왼손이 풀렸다.',2);else freeFromBed(false);}
+}
+function freeFromBed(silent){
+  const p=G.player,B=G.bound;if(!B)return;
+  if(!silent){G.deco.push({x:p.x,y:p.y,tex:TX.gurneyE,sw:1,sh:.56});p.x+=.75;sub('철컥. …풀렸다. 다리에 힘을 주고 일어선다.',3);sub('…여긴 어디지.',3);sub(HELP,7);}
+  else{G.deco.push({x:B.to.x,y:B.to.y,tex:TX.gurneyE,sw:1,sh:.56});p.x=B.to.x+.75;p.y=B.to.y;}
+  p.pitch=0;G.bound=null;
+}
 function sub(text,dur=3.6){G.subs.push({text,t:dur});}
 
 // ───────── 이동/충돌 ─────────
@@ -377,6 +443,7 @@ function update(dt){
   const dX=Math.cos(p.ang),dY=Math.sin(p.ang);
   let f=(K.KeyW||K.ArrowUp?1:0)-(K.KeyS||K.ArrowDown?1:0),s=(K.KeyD?1:0)-(K.KeyA?1:0);
   if(p.wake>0){p.wake-=dt;f=s=0;}
+  if(G.bound)f=s=0;
   const inVent=tile(Math.floor(p.x),Math.floor(p.y))==='V';
   const moving=!!(f||s);
   const maxSta=Math.max(35,100-G.age*.9);
@@ -390,9 +457,10 @@ function update(dt){
   G.moveAmt=lerp(G.moveAmt,moving?1:0,dt*8);
   if(moving){p.step+=sp*dt*2.2;G.stepAcc+=sp*dt;if(G.stepAcc>(sprint?1.1:1.4)){G.stepAcc=0;if(!inVent)SFX.step();}}
   const wakeK=p.wake>0?1-p.wake/3.2:1;
-  p.z=lerp(p.z,inVent?.24:.5,dt*6);
+  p.z=lerp(p.z,G.bound?.4:inVent?.24:.5,dt*6);
   p.cd-=dt;p.punch=Math.max(0,(p.punch||0)-dt);p.recoil=Math.max(0,p.recoil-dt*5);G.flashT-=dt;G.shake=Math.max(0,G.shake-dt*20);G.hurt=Math.max(0,G.hurt-dt);G.hitT=Math.max(0,(G.hitT||0)-dt);
   G.wakeK=wakeK;
+  if(G.bound){updateBound(dt);G.near=null;G.nearDoor=null;if(G.subs.length){G.subs[0].t-=dt;if(G.subs[0].t<=0)G.subs.shift();}return;}
 
   // 노화 (시간 + 진실을 알수록)
   G.age+=dt*.1;
@@ -517,7 +585,7 @@ function hurtPlayer(n,from){const p=G.player;p.hp-=n;G.hurt=.6;
 function makeNoise(r){const p=G.player;for(const m of G.mons){if(m.dead)continue;const d=Math.hypot(m.x-p.x,m.y-p.y);if(d<r){if(m.state==='dormant')wakeMon(m);else if(m.state!=='chase'&&m.state!=='pause')setSearch(m,p.x,p.y);}}}
 
 function shoot(){
-  const p=G.player;if(p.wake>0)return;const w=p.weapon;
+  const p=G.player;if(p.wake>0||G.bound)return;const w=p.weapon;
   if(!p.has[w]){punch();return;}
   if(p.cd>0)return;
   if(p.ammo[w]<=0){SFX.empty();p.cd=.3;sub('탄이 없다.',1.5);return;}
@@ -537,7 +605,7 @@ function shoot(){
 }
 // 주먹 — 사거리 짧고 약하지만 밀쳐내고 잠깐 멈추게 한다. 늙을수록 힘이 빠진다
 function punch(){
-  const p=G.player;if(p.wake>0||p.cd>0||p.punch>0)return;
+  const p=G.player;if(p.wake>0||G.bound||p.cd>0||p.punch>0)return;
   p.cd=p.tired?.75:.5;p.punch=.32;p.sta=Math.max(0,p.sta-9);SFX.swing();makeNoise(4);
   const dx=Math.cos(p.ang),dy=Math.sin(p.ang),pow=clamp(1-G.age/90,.45,1);
   let hit=null,hd=1.15;
@@ -624,6 +692,7 @@ function onKey(c){
     return;}
   if(scene==='dead'||scene==='end'){if(c==='KeyR'||c==='Enter')restart();return;}
   const p=G.player;
+  if(G.bound){boundKey(c);return;}
   if(c==='KeyE')interact();
   if(c==='KeyF'){p.flash=!p.flash;SFX.empty();}
   if(c==='Digit1'&&p.has[0])p.weapon=0;
@@ -707,6 +776,7 @@ function render3D(){
   // 스프라이트
   const sprites=[];
   for(const d of G.deco)sprites.push(d);
+  if(G.bound&&!G.bound.gotKey)sprites.push({x:G.bound.key.x,y:G.bound.key.y,tex:TX.cuffKey,sw:.16,sh:.16,glow:.9});
   for(const it of G.items){
     if(it.type==='cab'){sprites.push({x:it.x,y:it.y,tex:it.used?TX.cabO:TX.cab,sw:.56,sh:.75});continue;}
     if(it.type==='pc'){sprites.push({x:it.x,y:it.y,tex:TX.pc,sw:.9,sh:.68,glow:.1});continue;}
@@ -757,8 +827,9 @@ function render3D(){
 // 1인칭 손 — 나이가 들수록 손이 변한다
 function drawHands(){
   const p=G.player,g=bctx,a=clamp(G.age/55,0,1);
-  if(p.wake>0)return;
   const skin=`rgb(${lerp(214,196,a)|0},${lerp(168,170,a)|0},${lerp(138,150,a)|0})`;
+  if(G.bound){drawBoundBody(g,skin);return;}
+  if(p.wake>0)return;
   const bob=Math.sin(p.step*.5)*3*G.moveAmt,by=H+Math.abs(Math.cos(p.step*.5))*3*G.moveAmt+p.recoil*12;
   const marks=(x,y)=>{if(a>.35){g.strokeStyle='rgba(80,60,50,.6)';g.lineWidth=.6;for(let i=0;i<3;i++){g.beginPath();g.moveTo(x-4,y+i*2);g.quadraticCurveTo(x,y+i*2-1,x+4,y+i*2);g.stroke();}}
     if(a>.7){g.fillStyle='rgba(110,80,55,.8)';g.fillRect(x-2,y+6,2,2);g.fillRect(x+3,y+3,1.5,1.5);}};
@@ -794,6 +865,23 @@ function drawHands(){
     marks(cx+14,by-50);
     if(G.flashT>0){g.fillStyle='rgba(255,210,110,.95)';star(g,cx+5,by-72,22);}
   }
+}
+// 묶인 몸: 아래를 볼수록 시트·발이 올라오고, 양손은 난간에 수갑으로 묶여 있다
+function drawBoundBody(g,skin){
+  const p=G.player,B=G.bound,dn=clamp((-p.pitch-10)/90,0,1),lean=(B.lean||0)*Math.max(0,B.mv)*30;
+  if(dn>0){const top=H-dn*110;
+    g.fillStyle='#cfd2cc';g.beginPath();g.moveTo(W*.18+lean,H);g.lineTo(W*.36+lean,top);g.lineTo(W*.64+lean,top);g.lineTo(W*.82+lean,H);g.fill();
+    g.strokeStyle='#8e9496';g.lineWidth=2;g.beginPath();g.moveTo(W*.16+lean,H);g.lineTo(W*.34+lean,top-2);g.moveTo(W*.84+lean,H);g.lineTo(W*.66+lean,top-2);g.stroke();
+    if(B.stage==='brake'){g.fillStyle='#b01818';g.fillRect(W*.67+lean,top+4,7,12);g.fillStyle='#e8d070';g.fillRect(W*.67+lean,top+2,7,3);}
+    const reach=B.stage==='toe'&&B.hold>0?B.hold/2:0,kick=B.kickT>0?(B.kickT-=1/60,1):0;
+    for(const s of [-1,1]){const fx=W/2+s*16+lean+(s>0?kick*16:0),fy=top+16-(s>0?reach*22+kick*8:0);
+      g.fillStyle=skin;g.beginPath();g.ellipse(fx,fy,7,11,0,0,7);g.fill();
+      for(let i=0;i<5;i++){g.beginPath();g.arc(fx-5+i*2.5,fy-11+Math.abs(i-1.5)*.8,1.4,0,7);g.fill();}}
+  }
+  for(const s of [-1,1]){const free=B.cuffs>=(s<0?1:2),hx=W/2+s*W*.3,hy=H-14+(free?-14:0);
+    g.fillStyle=skin;g.beginPath();g.ellipse(hx,hy,11,9,s*.4,0,7);g.fill();
+    if(!free){g.strokeStyle='#9aa0a4';g.lineWidth=2.5;g.beginPath();g.ellipse(hx+s*2,hy+6,9,4,0,0,7);g.stroke();
+      g.lineWidth=1.5;g.beginPath();g.moveTo(hx+s*10,hy+8);g.lineTo(hx+s*24,H+2);g.stroke();}}
 }
 function star(g,x,y,r){g.beginPath();for(let i=0;i<16;i++){const a=i/16*6.283,rr=i%2?r*.4:r;g.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr);}g.fill();}
 
@@ -840,7 +928,10 @@ function drawHUD(){
   text(`기록 ${G.clues}/${TOTAL_CLUES}`,VW-24,34,15,'#d4c48a','right','bold');
   if(p.key)text('카드키 ■',VW-24,56,13,'#e05050','right');
   // 상호작용
-  if(G.search){const S=G.search,bw=260,bx2=VW/2-bw/2,by2=VH/2+44;
+  if(G.bound&&G.bound.prompt){const B=G.bound;text(B.prompt,VW/2,VH/2+70,17,'#f0ead0','center','bold');
+    if(B.stage==='toe'&&B.hold>0){ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(VW/2-130,VH/2+84,260,10);ctx.fillStyle='#d4c48a';ctx.fillRect(VW/2-130,VH/2+84,260*Math.min(1,B.hold/2),10);}
+    if(B.stage==='rock'){ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(VW/2-130,VH/2+84,260,6);ctx.fillStyle='#8ab0d4';ctx.fillRect(VW/2-130,VH/2+84,260*B.prog,6);}}
+  else if(G.search){const S=G.search,bw=260,bx2=VW/2-bw/2,by2=VH/2+44;
     text('서랍을 뒤지는 중… (E를 계속 누르고 있기)',VW/2,by2-8,15,'#f0ead0','center','bold');
     ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(bx2,by2,bw,10);ctx.fillStyle='#d4c48a';ctx.fillRect(bx2,by2,bw*S.t/S.dur,10);}
   else if(G.near){const n=G.near,lab=n==='exit'?'하수 해치를 열고 내려간다':n.type==='cab'?'서류함 뒤지기 (길게 누르기)':n.type==='pc'?'단말기 사용':n.type==='cctv'?'CCTV 모니터 보기':n.type==='doc'?'문서 읽기':n.type==='audio'?'녹음기 재생':n.type==='corpse'?'시신 뒤지기':n.type==='med'?'구급상자 줍기':'탄약 줍기';
