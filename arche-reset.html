@@ -351,7 +351,7 @@ function update(dt){
   if(moving){p.step+=sp*dt*2.2;G.stepAcc+=sp*dt;if(G.stepAcc>(sprint?1.1:1.4)){G.stepAcc=0;if(!inVent)SFX.step();}}
   const wakeK=p.wake>0?1-p.wake/3.2:1;
   p.z=lerp(p.z,inVent?.24:.5,dt*6);
-  p.cd-=dt;p.punch=Math.max(0,(p.punch||0)-dt);p.recoil=Math.max(0,p.recoil-dt*5);G.flashT-=dt;G.shake=Math.max(0,G.shake-dt*20);G.hurt=Math.max(0,G.hurt-dt);
+  p.cd-=dt;p.punch=Math.max(0,(p.punch||0)-dt);p.recoil=Math.max(0,p.recoil-dt*5);G.flashT-=dt;G.shake=Math.max(0,G.shake-dt*20);G.hurt=Math.max(0,G.hurt-dt);G.hitT=Math.max(0,(G.hitT||0)-dt);
   G.wakeK=wakeK;
 
   // 노화 (시간 + 진실을 알수록)
@@ -441,8 +441,13 @@ function updateMonsters(dt){
       m.t-=dt;if(m.t<=0){m.dir=rnd()*6.28;m.t=1.5+rnd()*2.5;m.idle=rnd()<.35;}
       if(!m.idle&&!moveEnt(m,Math.cos(m.dir)*.9*dt,Math.sin(m.dir)*.9*dt,walkM))m.dir+=2.2;
     }
-    if(d<.75&&m.atk<=0&&m.state!=='pause'){hurtPlayer(22);m.atk=1.1;}
+    // 공격: 붙으면 먼저 으르렁대며 팔을 든다(0.4초) → 그때도 붙어 있고 가로막힌 게 없으면 맞는다
+    if(m.wind>0){m.wind-=dt;if(m.wind<=0){if(d<.95&&los(m.x,m.y,p.x,p.y)){hurtPlayer(22,m);}m.atk=1.1;}}
+    else if(d<.8&&m.atk<=0&&m.state!=='pause'&&los(m.x,m.y,p.x,p.y)){m.wind=.4;if(m.state!=='chase')m.state='chase';SFX.growl(.2);}
   }
+  // 플레이어와 겹치면 괴물을 밀어낸다
+  for(const m of G.mons){if(m.dead||m.state==='dormant')continue;const dx=m.x-p.x,dy=m.y-p.y,d=Math.hypot(dx,dy)||.01;
+    if(d<.55){const k=(.55-d)/d;moveEnt(m,dx*k,dy*k,walkM);}}
   // 서로 겹치지 않게
   for(let a=0;a<G.mons.length;a++)for(let b=a+1;b<G.mons.length;b++){const A=G.mons[a],B=G.mons[b];if(A.dead||B.dead)continue;
     const dx=B.x-A.x,dy=B.y-A.y,d=Math.hypot(dx,dy);if(d>0&&d<.6){const k=(.6-d)/2/d;moveEnt(A,-dx*k,-dy*k,walkM);moveEnt(B,dx*k,dy*k,walkM);}}
@@ -454,9 +459,12 @@ function follow(m,speed,dt,chase){
     if(tile(di,dj)==='S'&&doorAt[dj*MW+di].open<.9){m.path=null;return;}}   // 그새 문이 닫혔다 — 문 앞에서 멈춘다
   else if(chase){tx=p.x;ty=p.y;}else return;
   if(chase&&Math.hypot(p.x-m.x,p.y-m.y)<1.2){tx=p.x;ty=p.y;}
+  // 플레이어 몸 안으로 파고들지 않는다 (겹치면 화면에서 안 보인 채 때리게 된다)
+  if(Math.hypot(p.x-m.x,p.y-m.y)<.62&&tx===p.x)return;
   const dx=tx-m.x,dy=ty-m.y,l=Math.hypot(dx,dy)||1;moveEnt(m,dx/l*speed*dt,dy/l*speed*dt,walkM);
 }
-function hurtPlayer(n){const p=G.player;p.hp-=n;G.hurt=.6;G.shake=6;SFX.hurt();if(p.hp<=0){p.hp=0;scene='dead';document.exitPointerLock&&document.exitPointerLock();}}
+function hurtPlayer(n,from){const p=G.player;p.hp-=n;G.hurt=.6;
+  if(from){G.hitDir=Math.atan2(from.y-p.y,from.x-p.x)-p.ang;G.hitT=1.4;}G.shake=6;SFX.hurt();if(p.hp<=0){p.hp=0;scene='dead';document.exitPointerLock&&document.exitPointerLock();}}
 function makeNoise(r){const p=G.player;for(const m of G.mons){if(m.dead)continue;const d=Math.hypot(m.x-p.x,m.y-p.y);if(d<r){if(m.state==='dormant')wakeMon(m);else if(m.state!=='chase'&&m.state!=='pause')setSearch(m,p.x,p.y);}}}
 
 function shoot(){
@@ -488,7 +496,7 @@ function punch(){
     if(Math.abs(ox*dy-oy*dx)<m.r+.3){hit=m;hd=al;}}
   if(hit){
     if(hit.state==='dormant')wakeMon(hit);
-    hit.hp-=1;hit.stun=.55*pow;hit.hes=true;G.shake=4;SFX.punch();
+    hit.hp-=1;hit.stun=.55*pow;hit.wind=0;hit.hes=true;G.shake=4;SFX.punch();
     if(hit.state!=='chase')hit.state='chase';
     moveEnt(hit,dx*.35*pow,dy*.35*pow,walkM);
     if(hit.hp<=0&&!hit.dead){hit.dead=true;G.stats.kills++;SFX.growl(.15);}
@@ -613,7 +621,8 @@ function render3D(){
   for(const m of G.mons){
     if(m.dead){sprites.push({x:m.x,y:m.y,tex:TX.monDead,sw:1,sh:.375});continue;}
     const tex=m.state==='dormant'?TX.monDead:(Math.floor(m.anim*(m.state==='chase'?7:3))%2?TX.mon1:TX.mon0);
-    sprites.push({x:m.x,y:m.y,tex,sw:m.state==='dormant'?1:.85,sh:m.state==='dormant'?.375:1,mon:m});
+    // 창백한 피부는 어둠 속에서도 희미하게 보인다. 팔을 들 때(공격 직전)는 더 하얗게 번뜩인다
+    sprites.push({x:m.x,y:m.y,tex,sw:m.state==='dormant'?1:.85,sh:m.state==='dormant'?.375:1,mon:m,glow:m.wind>0?.35:.07});
     m.scr=null;
   }
   const inv=1/(plX*dirY-dirX*plY);
@@ -700,6 +709,10 @@ function drawHUD(){
   // 비네트
   const vg=ctx.createRadialGradient(VW/2,VH/2,VH*.35,VW/2,VH/2,VH*.95);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.65)');ctx.fillStyle=vg;ctx.fillRect(0,0,VW,VH);
   if(G.hurt>0){ctx.fillStyle=`rgba(150,0,0,${G.hurt*.55})`;ctx.fillRect(0,0,VW,VH);}
+  // 맞은 방향 표시 — 화면 가장자리에 붉은 호
+  if(G.hitT>0){const a=G.hitDir,al=Math.min(1,G.hitT)*.85,R=VH*.42;
+    ctx.save();ctx.translate(VW/2,VH/2);ctx.rotate(a);ctx.strokeStyle=`rgba(220,30,30,${al})`;ctx.lineWidth=14;ctx.lineCap='round';
+    ctx.beginPath();ctx.arc(0,0,R,-Math.PI/2-.35,-Math.PI/2+.35);ctx.stroke();ctx.restore();}
   if(p.hp<35){ctx.fillStyle=`rgba(120,0,0,${.12+.1*Math.sin(G.t*5)})`;ctx.fillRect(0,0,VW,VH);}
   // "…?" — 괴물이 멈칫하는 순간
   for(const m of G.mons)if(m.mark>0&&m.scr){const a=Math.min(1,m.mark);text('…?',m.scr.x*3,m.scr.y*3-8,Math.max(14,40/m.scr.d),`rgba(230,230,210,${a})`,'center','bold');}
