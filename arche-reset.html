@@ -337,7 +337,8 @@ function newGame(){
   for(const [x,y] of [[20.5,7.4],[23.6,16.5],[40.5,27.5],[27.5,30.6],[33.5,9.4]])D(x,y,TX.corpse,1,.375);
   for(let j=0;j<MH;j++)for(let i=0;i<MW;i++)if(map[j][i]==='b'){const r=rnd();D(i+.5,j+.5,r<.25?TX.bed1:r<.42?TX.bed2:TX.bed0,1,.5);}
   const M=(x,y,ex={})=>G.mons.push({x:x+.5,y:y+.5,r:.3,hp:5,state:'wander',dir:rnd()*6.28,t:rnd()*2,path:null,pt:0,lost:0,lx:0,ly:0,hes:false,atk:0,anim:rnd()*10,stun:0,dead:false,mark:0,moanT:3+rnd()*6,idle:false,...ex});
-  M(30,27);M(44,33);M(14,30);M(36,24);M(31,8,{state:'dormant'});
+  // 방 재설계 중: 괴물은 잠시 모두 뺀다 (AI 코드는 그대로 두고, 배치만 끈다)
+  if(MONSTERS_ON){M(30,27);M(44,33);M(14,30);M(36,24);M(31,8,{state:'dormant'});}
 }
 function start(){initAudio();playCut('cut_wake',['……','차갑다.','누군가 나를 불렀던 것 같은데.','내 이름이… 뭐였지?'],toPlay);}
 function toPlay(){scene='play';tryLock();if(!G.started){G.started=true;sub('…여긴 어디지.',3);sub('클릭: 마우스 고정 · WASD 이동 · 클릭/스페이스 공격(맨손은 주먹, V 주먹) · F 손전등 · E 살펴보기 · Tab 지도',7);}}
@@ -566,12 +567,13 @@ function interact(){
   if(it.type==='med'){it.taken=true;p.med++;sub('구급상자를 챙겼다. (H 키로 사용)',2.5);return;}
   if(it.type==='corpse'){it.taken=true;
     if(it.give==='pistol'){p.has[0]=true;p.ammo[0]+=8;p.weapon=0;sub('특수부대원의 시신. 권총을 챙겼다. (8발)',3);
-      G.events.push({at:G.t+3.5,fn:()=>{sub('…복도 쪽에서 무언가 쓰러지는 소리가 났다.',3.5);SFX.growl(.12);G.mons.push(spawnMon(19,7,'search'));}});}
+      if(MONSTERS_ON)G.events.push({at:G.t+3.5,fn:()=>{sub('…복도 쪽에서 무언가 쓰러지는 소리가 났다.',3.5);SFX.growl(.12);G.mons.push(spawnMon(19,7,'search'));}});}
     if(it.give==='shotgun'){p.has[1]=true;p.ammo[1]+=4;p.weapon=1;sub('보안실 경비의 시신. 산탄총을 챙겼다. (1/2 키로 무기 교체)',3.5);}
     if(it.give==='key'){p.key=true;sub('시신의 손에 쥐여 있던 피 묻은 카드키. "B구역 출입 — 실장 전용"',4);
-      G.events.push({at:G.t+2,fn:()=>{SFX.growl(.25);G.mons.push(spawnMon(50,34,'search'));}});}
+      if(MONSTERS_ON)G.events.push({at:G.t+2,fn:()=>{SFX.growl(.25);G.mons.push(spawnMon(50,34,'search'));}});}
   }
 }
+const MONSTERS_ON=false;
 function spawnMon(x,y,state){const m={x:x+.5,y:y+.5,r:.3,hp:5,state,dir:0,t:0,path:null,pt:0,lost:0,lx:0,ly:0,hes:false,atk:0,anim:0,stun:0,dead:false,mark:0,moanT:4,idle:false};
   if(state==='search')m.path=bfs(m,G.player.x,G.player.y);return m;}
 function finishSearch(it){
