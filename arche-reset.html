@@ -250,7 +250,9 @@ addEventListener('blur',()=>{for(const k in K)K[k]=false;});
 const locked=()=>document.pointerLockElement===cv;
 // 포인터 잠금이 안 되는 환경(거부·임베드)에서도 쓰도록, 잠금 실패는 조용히 넘기고 드래그로 시선을 돌린다
 function tryLock(){if(locked()||!cv.requestPointerLock)return;try{const r=cv.requestPointerLock();if(r&&r.catch)r.catch(()=>{});}catch(e){}}
-addEventListener('mousemove',e=>{if(scene!=='play')return;if(locked())G.player.ang+=e.movementX*0.0024;else if(e.buttons&1)G.player.ang+=e.movementX*0.004;});
+const PITCH_MAX=H*.6;
+function look(dx,dy,k){const p=G.player;p.ang+=dx*k;p.pitch=clamp(p.pitch-dy*k*160,-PITCH_MAX,PITCH_MAX);}
+addEventListener('mousemove',e=>{if(scene!=='play')return;if(locked())look(e.movementX,e.movementY,.0024);else if(e.buttons&1)look(e.movementX,e.movementY,.004);});
 cv.addEventListener('mousedown',e=>{
   if(scene==='title'){start();return;}
   if(scene==='cut'){cutNext();if(scene==='play')tryLock();return;}
@@ -284,7 +286,7 @@ function drawCut(){
 
 function newGame(){
   seed=7;buildMap();bakeLights();
-  G={t:0,player:{x:4.5,y:5.5,ang:-0.15,r:.24,hp:100,sta:100,tired:false,flash:true,weapon:0,has:[false,false],ammo:[0,0],med:0,key:false,cd:0,wake:3.2,step:0,recoil:0,noise:0,z:.5},
+  G={t:0,player:{x:4.5,y:5.5,ang:-0.15,r:.24,hp:100,sta:100,tired:false,flash:true,weapon:0,has:[false,false],ammo:[0,0],med:0,key:false,cd:0,wake:3.2,step:0,recoil:0,noise:0,z:.5,pitch:0},
      mons:[],items:[],deco:[],subs:[],clues:0,read:{},age:0,ageStage:0,shake:0,hurt:0,flashT:0,doc:null,events:[],hb:0,moveAmt:0,
      seen:new Uint8Array(MW*MH),map:false,doorMsg:0,near:null,stats:{kills:0},stepAcc:0};
   const I=(x,y,type,ex={})=>G.items.push({x:x+.5,y:y+.5,type,taken:false,...ex});
@@ -519,7 +521,8 @@ function onKey(c){
 function render3D(){
   const p=G.player,dirX=Math.cos(p.ang),dirY=Math.sin(p.ang),plX=-dirY*PL,plY=dirX*PL;
   const z=(p.wake>0?lerp(.1,.5,G.wakeK):p.z)+Math.sin(p.step)*.012*G.moveAmt;
-  const hor=H/2+(G.shake?(Math.random()-.5)*G.shake:0);
+  // 위아래 시선: 둠처럼 지평선을 올리고 내린다 (손전등 원뿔은 화면 중앙에 고정이라 시선을 따라간다)
+  const hor=H/2+(p.wake>0?0:p.pitch)+(G.shake?(Math.random()-.5)*G.shake:0);
   const flick=(Math.sin(G.t*23)>.2||Math.sin(G.t*3.1)>.6)?1:.15,pulse=.75+.25*Math.sin(G.t*2.2);
   const AMB=.035,FL=p.flash?1.55:0,MZ=G.flashT>0?2.2:0;
   // 바닥·천장
