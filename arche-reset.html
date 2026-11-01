@@ -133,6 +133,22 @@ function makeTextures(){
   TX.ammo=mk(32,20,g=>{g.fillStyle='#3e4a2a';g.fillRect(4,6,24,14);g.fillStyle='#55633a';g.fillRect(4,6,24,3);g.fillStyle='#c9a640';g.fillRect(12,11,8,3);});
   TX.shell=mk(32,20,g=>{g.fillStyle='#7a1a14';g.fillRect(4,6,24,14);g.fillStyle='#9a2a20';g.fillRect(4,6,24,3);g.fillStyle='#d0b050';g.fillRect(10,11,3,6);g.fillRect(15,11,3,6);g.fillRect(20,11,3,6);});
   TX.med=mk(32,24,g=>{g.fillStyle='#e8e8e2';g.fillRect(4,6,24,18);g.fillStyle='#c41a1a';g.fillRect(13,9,6,12);g.fillRect(10,12,12,6);});
+  // 조사 대상: 서류함(닫힘/뒤진 뒤), 단말기 책상, CCTV 모니터
+  const cab=(open)=>mk(48,64,g=>{g.fillStyle='#5f676a';g.fillRect(4,0,40,64);g.fillStyle='#737b7e';g.fillRect(4,0,40,3);
+    for(let i=0;i<4;i++){const y=4+i*15;g.fillStyle='#6b7376';g.fillRect(7,y,34,13);g.fillStyle='#4a5154';g.fillRect(7,y+12,34,1);
+      g.fillStyle='#d8d4c4';g.fillRect(19,y+3,10,4);g.fillStyle='#2c3133';g.fillRect(17,y+8,14,2);}
+    speck(g,48,64,50,['#535a5d','#7a6040']);
+    if(open){g.fillStyle='#2a2f31';g.fillRect(5,19,38,13);g.fillStyle='#6b7376';g.fillRect(2,30,44,8);
+      g.fillStyle='#e8e2cf';for(let i=0;i<7;i++){g.save();g.translate(6+rnd()*36,40+rnd()*20);g.rotate(rnd()-.5);g.fillRect(-5,-3,10,7);g.restore();}}});
+  TX.cab=cab(false);TX.cabO=cab(true);
+  TX.pc=mk(64,48,g=>{g.fillStyle='#4a3a2a';g.fillRect(0,26,64,5);g.fillStyle='#3a2d20';g.fillRect(3,31,4,17);g.fillRect(57,31,4,17);g.fillRect(36,31,22,14);
+    g.fillStyle='#c9c3b0';g.fillRect(14,2,30,23);g.fillStyle='#0c1a10';g.fillRect(17,5,24,16);
+    g.fillStyle='#46e07a';for(let i=0;i<4;i++)g.fillRect(19,7+i*3,6+((i*7)%14),1);g.fillRect(19,19,3,1);
+    g.fillStyle='#b8b2a0';g.fillRect(24,24,10,3);g.fillStyle='#d9d3c0';g.fillRect(12,27,30,4);g.fillStyle='#e8e2cf';g.fillRect(46,24,10,3);});
+  TX.cctv=mk(64,56,g=>{g.fillStyle='#2a2d2f';g.fillRect(2,0,60,40);g.fillStyle='#3a3e40';g.fillRect(2,0,60,2);
+    for(let k=0;k<4;k++){const x=6+(k%2)*28,y=4+((k/2)|0)*18;g.fillStyle='#0b120d';g.fillRect(x,y,24,15);
+      g.fillStyle=k===3?'#7a2020':'#3f6a4a';for(let i=0;i<6;i++)g.fillRect(x+2+((i*5)%20),y+2+i*2,4+(i%3)*3,1);}
+    g.fillStyle='#e01818';g.fillRect(55,33,3,3);g.fillStyle='#4a3a2a';g.fillRect(0,40,64,5);g.fillStyle='#3a2d20';g.fillRect(4,45,4,11);g.fillRect(56,45,4,11);});
 }
 
 // ───────── 맵 ─────────
@@ -191,20 +207,30 @@ function bakeLights(){
 
 // ───────── 문서 (단서) ─────────
 const DOCS={
- d2:{no:'02',kind:'paper',title:'「새로운 인생을 드립니다」',
-  body:'아르케 생명재단 무료 건강 프로그램 참가자 모집\n대상: 만 65세 이상, 가족 및 법정 보호자가 없는 분\n혜택: 숙식 제공 · 전 과정 무료 · 섬 요양 시설 체류\n\n— 아래쪽 손글씨 메모 —\n"연고자 확인 완료 312명. 실종 신고 가능성 없음.\n 다음 배는 화요일. 언론 문의는 재단 법무팀으로."\n\n[최종 결재]  실장  ███████\n(서명란이 피에 번져 읽을 수 없다)',
-  after:'실장… 이름이 번져서 보이지 않는다.'},
+ d2:{no:'02',kind:'pc',title:'받은 메일 — 「3차 수송 대상 확정」',
+  body:'보낸 사람: 아르케 생명재단 법무팀\n받는 사람: 실장\n\n실장님, 3차 수송 대상 312명 확정되었습니다.\n조건: 만 65세 이상, 가족 및 법정 보호자 없음. 연고자 확인 완료.\n실종 신고 가능성 없습니다.\n\n대외 명목은 기존대로 「새로운 인생을 드립니다 — 무료 건강 프로그램 · 섬 요양 시설 체류」로 갑니다.\n다음 배는 화요일. 언론 문의는 저희 쪽으로 돌려 주십시오.\n\n[계정 정보]  실장  ███████\n(이름 부분만 데이터가 손상되어 읽을 수 없다)',
+  after:'실장… 이름만 지워져 있다.'},
  d3:{no:'03',kind:'paper',title:'[대외비] 아르케 프로토콜 1차 임상 결과',
   body:'피험자 A-014 ~ A-061 (48명)\n\n투여 후 72시간: 전원 세포 재생 지표 상승. 피부 탄력 회복, 백발 흑화 관찰.\n투여 후 120시간: 41명 세포 붕괴 시작. 골격 변형, 통각 상실, 공격성 급증.\n생존 7명: 인지 기능 소실. 같은 단어만 반복함 ("집", "엄마", "살려").\n\n결론: 재조립 과정 안정화 실패.\n2차 임상은 용량을 줄여 즉시 진행할 것.\n\n— 승인: 실장',
   after:'젊어지는 약… 그리고 괴물이 되는 약.'},
  d4:{no:'04',kind:'paper',title:'처리 지시 #B-07',
   body:'실패 개체는 \'B-시리즈\'로 재분류하여 하수 처리망 3번 구역에 격리 유기한다.\n급식 중단. 자연 소멸 예상.\n\n특이사항:\nB-시리즈는 동종 개체(약물 투여 이력이 있는 인간)를 보면 즉시 공격하지 않는다.\n잠시 멈춰 냄새를 맡는 행동이 반복 관찰됨. 원인 불명.\n\n※ 연구 인력은 투여 이력이 없으므로 해당 없음.',
   after:'투여 이력이 있는 인간에게는… 멈칫한다.'},
- d6:{no:'06',kind:'audio',title:'음성 기록 — 연구원 한서진 (마지막 녹음)',
+ d6:{no:'06',kind:'cctv',title:'CCTV CH4 녹화 — 제3실험실',
   body:'(거친 숨소리)\n\n…은우야. 이걸 듣고 있다면, 네가 정말 해버린 거겠지.\n\n나는 못 하겠다고 했어. 그 사람들 이름도 있었어.\n박순례 할머니는 매일 아침 내 손을 잡고 고맙다고 했다고.\n\n보안팀이 오고 있어. 문이 잠겼… 네가 잠근 거야?\n\n(쾅. 쾅.)\n\n은우야. 기억을 지워도, 네가 한 일은 안 지워져.\n\n(녹음 종료)',
   after:'은우… 그게 누구지. 왜 이렇게 귀에 익지.'}
 };
 const TOTAL_CLUES=5;
+// 서류함 뒤지기 결과 (find: 단서 id, 'pw': 단말기 암호 메모, 없으면 빈 서랍)
+const CAB_EMPTY=['약품 재고표와 빈 바인더뿐이다.','파쇄된 종이 조각만 가득하다.','잠긴 서랍을 억지로 열었다. …비어 있다.','피험자 식단표. "염분 제한, 수면제 혼합".','인사 기록 — 전부 이름이 검게 칠해져 있다.'];
+const PC_PW='0917';
+// CCTV: 실시간 채널 3개 + 녹화 보관본 1개 (보는 동안에도 시간은 흐른다)
+const CAMS=[{name:'CH1 · 제3실험실',x:2.6,y:2.6,ang:Math.atan2(5.4,7.4)},{name:'CH2 · 중앙 복도',x:26.6,y:6.3,ang:Math.PI+.12},
+  {name:'CH3 · B2 수용 블록',x:8.6,y:21.6,ang:Math.atan2(8.4,21.4)},{name:'CH4 · 녹화 보관본',x:15.4,y:2.6,ang:Math.atan2(2.9,-10.9),rec:true}];
+const REC=[[0,'제3실험실 · 녹화 보관본 · 03:12'],[3,'흰 가운을 입은 두 사람이 침대 옆에 서 있다.'],[7,'여자: "은우야, 그만해. 저 사람들한테도 이름이 있어."'],
+  [11.5,'남자는 대답 없이 주사기를 집어 든다.'],[15.5,'여자가 문으로 뛰어간다. 문이… 열리지 않는다.'],[19.5,'남자가 천천히 카메라를 올려다본다.'],
+  [23,'얼굴은 노이즈에 뭉개져 알아볼 수 없다.'],[26,'(녹화 끊김)']];
+const REC_END=28.5;
 
 // ───────── 오디오 ─────────
 let AC=null,master=null;
@@ -242,7 +268,8 @@ const SFX={
   hit(){noise(.08,.3,1500);tone(200,.1,'sawtooth',.15,90);},
   swing(){noise(.14,.12,900);},
   punch(){noise(.07,.45,600);tone(95,.12,'sine',.5,55);},
-  thud(){noise(.06,.25,350);tone(70,.08,'sine',.3,50);}
+  thud(){noise(.06,.25,350);tone(70,.08,'sine',.3,50);},
+  rattle(){noise(.18,.22,2600);tone(240+Math.random()*80,.06,'square',.05);}
 };
 
 // ───────── 입력 ─────────
@@ -260,6 +287,7 @@ cv.addEventListener('mousedown',e=>{
   if(scene==='title'){start();return;}
   if(scene==='cut'){cutNext();if(scene==='play')tryLock();return;}
   if(scene==='doc'){closeDoc();return;}
+  if(scene==='term'||scene==='cctv')return;
   if(scene==='dead'||scene==='end'){restart();return;}
   if(scene==='play'){if(!locked()){tryLock();return;}shoot();}
 });
@@ -291,10 +319,17 @@ function newGame(){
   seed=7;buildMap();bakeLights();
   G={t:0,player:{x:4.5,y:5.5,ang:-0.15,r:.24,hp:100,sta:100,tired:false,flash:true,weapon:0,has:[false,false],ammo:[0,0],med:0,key:false,cd:0,wake:3.2,step:0,recoil:0,noise:0,z:.5,pitch:0},
      mons:[],items:[],deco:[],subs:[],clues:0,read:{},age:0,ageStage:0,shake:0,hurt:0,flashT:0,doc:null,events:[],hb:0,moveAmt:0,
-     seen:new Uint8Array(MW*MH),map:false,doorMsg:0,near:null,stats:{kills:0},stepAcc:0};
+     seen:new Uint8Array(MW*MH),map:false,doorMsg:0,near:null,stats:{kills:0},stepAcc:0,
+     search:null,pwKnown:false,pcOK:false,term:null,cc:{ch:0},recT:0,pwFails:0,pcLock:0};
   const I=(x,y,type,ex={})=>G.items.push({x:x+.5,y:y+.5,type,taken:false,...ex});
-  I(12,4,'doc',{doc:'d3'});I(6,17,'corpse',{give:'pistol'});I(3,19,'doc',{doc:'d4'});I(26,7,'ammo',{w:0,n:8});
-  I(34,5,'doc',{doc:'d2'});I(39,9,'med');I(50,6,'corpse',{give:'shotgun'});I(53,3,'audio',{doc:'d6'});
+  I(6,17,'corpse',{give:'pistol'});I(26,7,'ammo',{w:0,n:8});
+  I(39,9,'med');I(50,6,'corpse',{give:'shotgun'});
+  // 조사 대상 (벽에 붙여 둔다)
+  const PR=(x,y,type,ex={})=>G.items.push({x,y,type,taken:false,used:false,...ex});
+  PR(13.5,2.42,'cab');PR(15.58,3.5,'cab',{find:'d3'});PR(2.42,9.5,'cab');                 // 제3실험실
+  PR(11.58,15.5,'cab',{find:'pw'});PR(2.42,16.5,'cab');PR(6.5,20.58,'cab',{find:'d4'});     // 약품 창고
+  PR(41.58,4.5,'cab');PR(28.42,10.5,'cab');PR(34.5,2.45,'pc');                              // 연구 사무실
+  PR(49.5,2.45,'cctv');                                                                     // 보안 통제실
   I(46,34,'corpse',{give:'key'});I(12,34,'ammo',{w:0,n:6});I(30,34,'ammo',{w:1,n:3});I(14,9,'med');
   const D=(x,y,tex,sw,sh)=>G.deco.push({x,y,tex,sw,sh});
   for(const [x,y] of [[8.5,3.5],[12.5,7.5],[4.5,8.8],[8.5,9.2],[13.5,3.2]])D(x,y,TX.gurney,1,.56);
@@ -328,6 +363,10 @@ function bfs(m,tx,ty){
 // ───────── 업데이트 ─────────
 function update(dt){
   if(scene==='cut'){CUT.t+=dt;CUT.total+=dt;if(CUT.t>3.6)cutNext();return;}
+  // 단말기·CCTV를 보는 동안에도 괴물은 움직인다 (맞으면 화면에서 튕겨 나온다)
+  if(scene==='term'||scene==='cctv'){
+    G.t+=dt;G.player.noise=0;updateDoors(dt);updateMonsters(dt);G.hurt=Math.max(0,G.hurt-dt);G.hitT=Math.max(0,(G.hitT||0)-dt);
+    if(scene==='cctv')updateCCTV(dt);return;}
   if(scene!=='play')return;
   G.t+=dt;const p=G.player;
   for(let i=G.events.length-1;i>=0;i--){const e=G.events[i];if(G.t>=e.at){G.events.splice(i,1);e.fn();}}
@@ -378,9 +417,17 @@ function update(dt){
 
   // 상호작용 대상
   G.near=null;let best=1.4;
-  for(const it of G.items){if(it.taken)continue;const d=Math.hypot(it.x-p.x,it.y-p.y);if(d>best)continue;
+  for(const it of G.items){if(it.taken||(it.type==='cab'&&it.used))continue;const d=Math.hypot(it.x-p.x,it.y-p.y);if(d>best)continue;
     const a=Math.atan2(it.y-p.y,it.x-p.x)-p.ang,ad=Math.abs(Math.atan2(Math.sin(a),Math.cos(a)));if(ad<.7||d<.6){best=d;G.near=it;}}
   if(!G.near&&Math.hypot(p.x-57.5,p.y-30.5)<1.3&&Math.cos(p.ang)>.5)G.near='exit';
+
+  // 서류함 뒤지기: E를 누르고 있는 동안만 진행. 덜컹거리는 소리가 괴물을 부른다
+  const S=G.search;
+  if(S){
+    if(!K.KeyE||G.near!==S.it||moving){G.search=null;}
+    else{S.t+=dt;S.tick-=dt;if(S.tick<=0){S.tick=.55;SFX.rattle();makeNoise(5.5);}
+      if(S.t>=S.dur){G.search=null;finishSearch(S.it);}}
+  }
 
   updateMonsters(dt);
 
@@ -464,7 +511,8 @@ function follow(m,speed,dt,chase){
   const dx=tx-m.x,dy=ty-m.y,l=Math.hypot(dx,dy)||1;moveEnt(m,dx/l*speed*dt,dy/l*speed*dt,walkM);
 }
 function hurtPlayer(n,from){const p=G.player;p.hp-=n;G.hurt=.6;
-  if(from){G.hitDir=Math.atan2(from.y-p.y,from.x-p.x)-p.ang;G.hitT=1.4;}G.shake=6;SFX.hurt();if(p.hp<=0){p.hp=0;scene='dead';document.exitPointerLock&&document.exitPointerLock();}}
+  if(from){G.hitDir=Math.atan2(from.y-p.y,from.x-p.x)-p.ang;G.hitT=1.4;}
+  G.search=null;if(scene==='term'||scene==='cctv'){scene='play';G.term=null;G.doc=null;}G.shake=6;SFX.hurt();if(p.hp<=0){p.hp=0;scene='dead';document.exitPointerLock&&document.exitPointerLock();}}
 function makeNoise(r){const p=G.player;for(const m of G.mons){if(m.dead)continue;const d=Math.hypot(m.x-p.x,m.y-p.y);if(d<r){if(m.state==='dormant')wakeMon(m);else if(m.state!=='chase'&&m.state!=='pause')setSearch(m,p.x,p.y);}}}
 
 function shoot(){
@@ -508,6 +556,10 @@ function interact(){
   const it=G.near,p=G.player;
   if(!it){if(G.nearDoor)openDoor(G.nearDoor,true);return;}
   if(it==='exit'){SFX.door();playCut('cut_ladder',['녹슨 사다리를 내려간다. 하수 냄새가 숨을 막는다.','사다리를 쥔 손을 내려다본다.','…처음 눈떴을 때보다, 늙었다.'],()=>{scene='end';});return;}
+  if(it.type==='cab'){if(!G.search)G.search={it,t:0,dur:2.8,tick:0};return;}
+  if(it.type==='pc'){scene='term';G.search=null;SFX.empty();
+    G.term=G.pcOK?{stage:'menu',pw:'',view:null}:{stage:'login',pw:'',view:null};return;}
+  if(it.type==='cctv'){scene='cctv';G.search=null;SFX.empty();return;}
   SFX.pick();
   if(it.type==='doc'||it.type==='audio'){it.taken=true;readClue(it.doc);return;}
   if(it.type==='ammo'){it.taken=true;p.ammo[it.w]+=it.n;sub(it.w?`산탄 ${it.n}발을 챙겼다.`:`권총 탄 ${it.n}발을 챙겼다.`,2.5);return;}
@@ -522,6 +574,34 @@ function interact(){
 }
 function spawnMon(x,y,state){const m={x:x+.5,y:y+.5,r:.3,hp:5,state,dir:0,t:0,path:null,pt:0,lost:0,lx:0,ly:0,hes:false,atk:0,anim:0,stun:0,dead:false,mark:0,moanT:4,idle:false};
   if(state==='search')m.path=bfs(m,G.player.x,G.player.y);return m;}
+function finishSearch(it){
+  it.used=true;SFX.page();
+  if(it.find==='pw'){G.pwKnown=true;sub('서랍 안쪽에 붙은 포스트잇: "단말기 0917 — 실장님 생일. 잊지 말 것"',5);return;}
+  if(it.find){readClue(it.find);return;}
+  sub(CAB_EMPTY[G.items.indexOf(it)%CAB_EMPTY.length],3);
+}
+// 단말기 — 암호 입력 → 메뉴 (1 메일 / 2 피험자 DB / 3 보안 로그)
+function termKey(c){
+  const T=G.term;
+  if(c==='Escape'&&!T.view){scene='play';G.term=null;return;}
+  if(T.view){if(['Escape','Enter','Space','Backspace','KeyE'].includes(c)){if(T.view==='mail'){T.view=null;G.doc=null;sub(DOCS.d2.after,4);}else T.view=null;}return;}
+  if(T.stage==='login'){
+    if(G.t<G.pcLock){return;}
+    const dg=c.match(/^(?:Digit|Numpad)(\d)$/);
+    if(dg&&T.pw.length<4){T.pw+=dg[1];tone(1200,.03,'square',.05);}
+    else if(c==='Backspace')T.pw=T.pw.slice(0,-1);
+    else if(c==='Enter'&&T.pw.length===4){
+      if(T.pw===PC_PW){G.pcOK=true;T.stage='menu';T.pw='';tone(880,.08,'triangle',.12);setTimeout(()=>tone(1320,.1,'triangle',.1),90);}
+      else{T.pw='';G.pwFails++;tone(180,.25,'square',.15);T.err=G.t+1.5;
+        if(G.pwFails%3===0){G.pcLock=G.t+8;sub('경고음이 울렸다! 놈들이 소리를 들었다.',3);for(let i=0;i<3;i++)setTimeout(()=>tone(1500,.18,'square',.2),i*260);makeNoise(18);}}
+    }
+    return;
+  }
+  if(c==='Digit1'||c==='Numpad1'){T.view='mail';const first=!G.read.d2;if(first){G.read.d2=true;G.clues++;G.age+=7;}G.doc=DOCS.d2;SFX.page();
+    if(first){const m=G.mons.find(m=>m.state==='dormant');if(m)G.events.push({at:G.t+3,fn:()=>{sub('뒤에서… 시체 하나가 일어났다.',3);wakeMon(m);}});}}
+  if(c==='Digit2'||c==='Numpad2')T.view='db';
+  if(c==='Digit3'||c==='Numpad3')T.view='log';
+}
 function readClue(id){
   if(!G.read[id]){G.read[id]=true;G.clues++;G.age+=7;}
   G.doc=DOCS[id];scene='doc';SFX.page();
@@ -534,6 +614,12 @@ function onKey(c){
   if(scene==='title'){if(c==='Enter'||c==='Space')start();return;}
   if(scene==='cut'){if(c==='Escape')cutEnd();else if(['Enter','Space','KeyE'].includes(c))cutNext();return;}
   if(scene==='doc'){if(['KeyE','Escape','Space','Enter'].includes(c))closeDoc();return;}
+  if(scene==='term'){termKey(c);return;}
+  if(scene==='cctv'){const cc=G.cc;
+    if(c==='Escape'||c==='KeyE'){scene='play';return;}
+    const dg=c.match(/^(?:Digit|Numpad)([1-4])$/);if(dg){cc.ch=+dg[1]-1;SFX.empty();}
+    if(c==='ArrowRight'||c==='KeyD'){cc.ch=(cc.ch+1)%4;SFX.empty();}if(c==='ArrowLeft'||c==='KeyA'){cc.ch=(cc.ch+3)%4;SFX.empty();}
+    return;}
   if(scene==='dead'||scene==='end'){if(c==='KeyR'||c==='Enter')restart();return;}
   const p=G.player;
   if(c==='KeyE')interact();
@@ -547,13 +633,20 @@ function onKey(c){
 }
 
 // ───────── 렌더링: 레이캐스터 ─────────
+// CAMV: 0 = 플레이어 시점, 1 = CCTV 실시간, 2 = CCTV 녹화(괴물 없음)
+let CAMV=0;
+function camView(cam){
+  const p=G.player,s={x:p.x,y:p.y,ang:p.ang,pitch:p.pitch,z:p.z,step:p.step};
+  Object.assign(p,{x:cam.x,y:cam.y,ang:cam.ang,pitch:-22,z:.86,step:0});CAMV=cam.rec?2:1;
+  try{render3D();}finally{CAMV=0;Object.assign(p,s);}
+}
 function render3D(){
   const p=G.player,dirX=Math.cos(p.ang),dirY=Math.sin(p.ang),plX=-dirY*PL,plY=dirX*PL;
   const z=(p.wake>0?lerp(.1,.5,G.wakeK):p.z)+Math.sin(p.step)*.012*G.moveAmt;
   // 위아래 시선: 둠처럼 지평선을 올리고 내린다 (손전등 원뿔은 화면 중앙에 고정이라 시선을 따라간다)
-  const hor=H/2+(p.wake>0?0:p.pitch)+(G.shake?(Math.random()-.5)*G.shake:0);
+  const hor=H/2+(p.wake>0&&!CAMV?0:p.pitch)+(G.shake&&!CAMV?(Math.random()-.5)*G.shake:0);
   const flick=(Math.sin(G.t*23)>.2||Math.sin(G.t*3.1)>.6)?1:.15,pulse=.75+.25*Math.sin(G.t*2.2);
-  const AMB=.035,FL=p.flash?1.55:0,MZ=G.flashT>0?2.2:0;
+  const AMB=CAMV?.55:.035,FL=!CAMV&&p.flash?1.55:0,MZ=!CAMV&&G.flashT>0?2.2:0;   // CCTV는 적외선 야간 촬영처럼 밝게
   // 바닥·천장
   const rx0=dirX-plX,ry0=dirY-plY,rx1=dirX+plX,ry1=dirY+plY;
   for(let y=0;y<H;y++){
@@ -613,17 +706,20 @@ function render3D(){
   const sprites=[];
   for(const d of G.deco)sprites.push(d);
   for(const it of G.items){
+    if(it.type==='cab'){sprites.push({x:it.x,y:it.y,tex:it.used?TX.cabO:TX.cab,sw:.56,sh:.75});continue;}
+    if(it.type==='pc'){sprites.push({x:it.x,y:it.y,tex:TX.pc,sw:.9,sh:.68,glow:.1});continue;}
+    if(it.type==='cctv'){sprites.push({x:it.x,y:it.y,tex:TX.cctv,sw:1.1,sh:.96,glow:.12});continue;}
     if(it.type==='corpse'){sprites.push({x:it.x,y:it.y,tex:TX.corpse,sw:1,sh:.375,glow:it.taken?0:.18});continue;}
     if(it.taken)continue;
     const tex=it.type==='doc'?TX.paper:it.type==='audio'?TX.rec:it.type==='med'?TX.med:it.w?TX.shell:TX.ammo;
     sprites.push({x:it.x,y:it.y,tex,sw:tex.w/80,sh:tex.h/80,glow:.3});
   }
-  for(const m of G.mons){
+  for(const m of (CAMV===2?[]:G.mons)){
     if(m.dead){sprites.push({x:m.x,y:m.y,tex:TX.monDead,sw:1,sh:.375});continue;}
     const tex=m.state==='dormant'?TX.monDead:(Math.floor(m.anim*(m.state==='chase'?7:3))%2?TX.mon1:TX.mon0);
     // 창백한 피부는 어둠 속에서도 희미하게 보인다. 팔을 들 때(공격 직전)는 더 하얗게 번뜩인다
     sprites.push({x:m.x,y:m.y,tex,sw:m.state==='dormant'?1:.85,sh:m.state==='dormant'?.375:1,mon:m,glow:m.wind>0?.35:.07});
-    m.scr=null;
+    if(!CAMV)m.scr=null;
   }
   const inv=1/(plX*dirY-dirX*plY);
   for(const s of sprites){const ox=s.x-p.x,oy=s.y-p.y;s.tx=inv*(dirY*ox-dirX*oy);s.ty=inv*(-plY*ox+plX*oy);}
@@ -645,7 +741,12 @@ function render3D(){
         px[o]=t.d[ti]*(L+w+r);px[o+1]=t.d[ti+1]*(L+w+r*.16);px[o+2]=t.d[ti+2]*(L+w*.95+r*.13);
       }
     }
-    if(s.mon&&vis)s.mon.scr={x:scx,y:top,d};
+    if(s.mon&&vis&&!CAMV)s.mon.scr={x:scx,y:top,d};
+  }
+  if(CAMV){   // 녹색 흑백 + 지글거림 (녹화본은 더 심하게)
+    const nz=CAMV===2?70:22;
+    for(let i=0;i<W*H;i++){const o=i*4,l=px[o]*.3+px[o+1]*.59+px[o+2]*.11+(Math.random()-.5)*nz;px[o]=l*.62;px[o+1]=l*1.05;px[o+2]=l*.68;}
+    bctx.putImageData(img,0,0);return;
   }
   bctx.putImageData(img,0,0);
   drawHands();
@@ -737,13 +838,15 @@ function drawHUD(){
   text(`기록 ${G.clues}/${TOTAL_CLUES}`,VW-24,34,15,'#d4c48a','right','bold');
   if(p.key)text('카드키 ■',VW-24,56,13,'#e05050','right');
   // 상호작용
-  if(G.near){const n=G.near,lab=n==='exit'?'하수 해치를 열고 내려간다':n.type==='doc'?'문서 읽기':n.type==='audio'?'녹음기 재생':n.type==='corpse'?'시신 뒤지기':n.type==='med'?'구급상자 줍기':'탄약 줍기';
+  if(G.search){const S=G.search,bw=260,bx2=VW/2-bw/2,by2=VH/2+44;
+    text('서랍을 뒤지는 중… (E를 계속 누르고 있기)',VW/2,by2-8,15,'#f0ead0','center','bold');
+    ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(bx2,by2,bw,10);ctx.fillStyle='#d4c48a';ctx.fillRect(bx2,by2,bw*S.t/S.dur,10);}
+  else if(G.near){const n=G.near,lab=n==='exit'?'하수 해치를 열고 내려간다':n.type==='cab'?'서류함 뒤지기 (길게 누르기)':n.type==='pc'?'단말기 사용':n.type==='cctv'?'CCTV 모니터 보기':n.type==='doc'?'문서 읽기':n.type==='audio'?'녹음기 재생':n.type==='corpse'?'시신 뒤지기':n.type==='med'?'구급상자 줍기':'탄약 줍기';
     text(`[E] ${lab}`,VW/2,VH/2+60,17,'#f0ead0','center','bold');}
   else if(G.nearDoor)text(G.nearDoor.locked&&!p.key?'잠긴 철문 — 카드키 필요':'[E] 문 열기',VW/2,VH/2+60,17,G.nearDoor.locked&&!p.key?'#e07070':'#f0ead0','center','bold');
   // 자막
   if(G.subs.length){const s=G.subs[0],a=Math.min(1,s.t*2);ctx.font=`17px ${FONT}`;const w=ctx.measureText(s.text).width+40;
     ctx.fillStyle=`rgba(0,0,0,${.6*a})`;ctx.fillRect(VW/2-w/2,VH-128,w,34);text(s.text,VW/2,VH-105,17,`rgba(240,236,220,${a})`,'center');}
-  if(!locked()&&scene==='play'&&p.wake<=0)text('화면을 클릭하면 마우스로 시야를 돌릴 수 있습니다',VW/2,70,14,'rgba(255,255,255,.55)','center');
   if(G.map)drawMap();
 }
 function drawMap(){
@@ -766,6 +869,72 @@ function drawDoc(){
   wrap(d.body,x+30,y+108,w-60,23,15,ink);
   text('[E] 닫기',x+w-30,y+h-22,13,sub,'right');
 }
+// ───────── CCTV / 단말기 화면 ─────────
+function updateCCTV(dt){
+  if(CAMS[G.cc.ch].rec&&!G.read.d6){G.recT+=dt;
+    if(G.recT>=REC_END){G.read.d6=true;G.clues++;G.age+=7;SFX.page();sub('[기록 #06] '+DOCS.d6.after,4.5);}}
+}
+function monitorFrame(x,y,w,h){ctx.fillStyle='#16191a';ctx.fillRect(x-14,y-14,w+28,h+28);ctx.strokeStyle='#2c3133';ctx.lineWidth=3;ctx.strokeRect(x-14,y-14,w+28,h+28);}
+function scanlines(x,y,w,h){ctx.fillStyle='rgba(0,0,0,.22)';for(let j=y;j<y+h;j+=3)ctx.fillRect(x,j,w,1);
+  const roll=(performance.now()/14)%(h+60)-60;ctx.fillStyle='rgba(180,255,200,.05)';ctx.fillRect(x,y+Math.max(0,roll),w,Math.min(40,h-Math.max(0,roll)));}
+function drawCCTV(){
+  const cc=G.cc,cam=CAMS[cc.ch];
+  ctx.fillStyle='rgba(0,0,0,.85)';ctx.fillRect(0,0,VW,VH);
+  const w=720,h=405,x=(VW-w)/2,y=40;
+  monitorFrame(x,y,w,h);
+  camView(cam);ctx.imageSmoothingEnabled=false;ctx.drawImage(buf,x,y,w,h);
+  if(cam.rec){   // 녹화본: 화면 깨짐
+    for(let i=0;i<4;i++)if(Math.random()<.35){const yy=y+Math.random()*h;ctx.drawImage(buf,0,(yy-y)/h*H,W,4,x+(Math.random()-.5)*30,yy,w,10);}
+    if(Math.random()<.04){ctx.fillStyle='rgba(200,230,210,.25)';ctx.fillRect(x,y,w,h);}
+  }
+  scanlines(x,y,w,h);
+  text(cam.name,x+16,y+28,16,'#b8f0c8','left','bold');
+  const tt=cam.rec?`11-03  03:${String(12+Math.floor(G.recT/60)).padStart(2,'0')}:${String(Math.floor(G.recT%60)).padStart(2,'0')}  ▶ 재생`:`LIVE  ${String(Math.floor(G.t/60)).padStart(2,'0')}:${String(Math.floor(G.t%60)).padStart(2,'0')}`;
+  text(tt,x+w-16,y+28,15,cam.rec?'#e0a0a0':'#b8f0c8','right');
+  if(!cam.rec&&Math.floor(G.t*2)%2){ctx.fillStyle='#e02020';ctx.beginPath();ctx.arc(x+w-150,y+23,5,0,7);ctx.fill();}
+  if(cam.rec){
+    if(G.read.d6&&G.recT>=REC_END)text('— 녹화 끝 —',VW/2,y+h/2,22,'#d8e8dc','center','bold');
+    else{let line='';for(const [t,l] of REC)if(G.recT>=t)line=l;
+      ctx.font=`18px ${FONT}`;const lw=ctx.measureText(line).width+36;ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(VW/2-lw/2,y+h-58,lw,36);
+      text(line,VW/2,y+h-33,18,'#f0ecdc','center');
+      ctx.fillStyle='#333';ctx.fillRect(x+16,y+h-14,w-32,4);ctx.fillStyle='#c04040';ctx.fillRect(x+16,y+h-14,(w-32)*Math.min(1,G.recT/REC_END),4);}
+  }
+  // 채널 버튼
+  for(let i=0;i<4;i++){const bx=VW/2-210+i*105,by=y+h+30,on=i===cc.ch;
+    ctx.fillStyle=on?'#2f5a3f':'#1c2220';ctx.fillRect(bx,by,96,30);text(`${i+1}  ${i===3?'녹화':'CH'+(i+1)}`,bx+48,by+21,14,on?'#e0ffe8':'#7a9a86','center','bold');}
+  text('1~4 / ← → 채널 변경    ·    E / Esc 나가기    ·    보는 동안에도 놈들은 움직인다',VW/2,VH-18,13,'#777','center');
+}
+function drawTerm(){
+  const T=G.term;
+  ctx.fillStyle='rgba(0,0,0,.85)';ctx.fillRect(0,0,VW,VH);
+  const w=680,h=420,x=(VW-w)/2,y=50;
+  monitorFrame(x,y,w,h);ctx.fillStyle='#07120b';ctx.fillRect(x,y,w,h);
+  const G1='#5fe08a',G2='#2f8a52',L=(s,i,c=G1,sz=16)=>text(s,x+30,y+44+i*26,sz,c);
+  L('ARCHE LIFE FOUNDATION — 내부망 단말 v3.1',0,G2,14);
+  if(T.view==='mail'){const d=DOCS.d2;L(d.title,1,G1,18);
+    ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();wrap(d.body,x+30,y+112,w-60,23,15,G1);ctx.restore();
+    text('[Enter / Esc] 메일함으로',x+w-24,y+h-18,13,G2,'right');}
+  else if(T.view==='db'){L('피험자 데이터베이스',1,G1,18);
+    const rows=['A-014  박순례  72세   상태: B 재분류','A-015  김정자  71세   상태: B 재분류','A-016  오만석  76세   상태: 사망','  …   (312건)','','A-000  ███   ??세   상태: 기록 삭제됨','       삭제 요청자: 본인   ·   투여 등급: 원액'];
+    rows.forEach((r,i)=>L(r,i+3,r.startsWith('A-000')||r.includes('본인')?'#e0c070':G1,15));
+    text('[Enter / Esc] 뒤로',x+w-24,y+h-18,13,G2,'right');}
+  else if(T.view==='log'){L('보안 로그',1,G1,18);
+    ['03:12  제3실험실 출입 — 카드 소유자: 실장','03:13  제3실험실 출입문 수동 잠금','03:14  보안팀 호출 (응답 없음)','03:20  CCTV CH4 녹화 보관 → 보안 통제실 모니터','04:02  B2 격리 구역 카드키 1매 분실 보고'].forEach((r,i)=>L(r,i+3,G1,15));
+    text('[Enter / Esc] 뒤로',x+w-24,y+h-18,13,G2,'right');}
+  else if(T.stage==='login'){
+    L('사용자: 실장',2);L('암호를 입력하십시오 (숫자 4자리)',3);
+    const shown=T.pw.padEnd(4,'_').split('').map((c,i)=>i<T.pw.length?'*':'_').join(' ');
+    text(shown,VW/2,y+220,40,G1,'center','bold');
+    if(G.t<G.pcLock)text(`보안 잠금 — ${Math.ceil(G.pcLock-G.t)}초 후 다시 시도`,VW/2,y+280,16,'#e06060','center','bold');
+    else if(T.err&&G.t<T.err)text('암호가 틀렸습니다',VW/2,y+280,16,'#e06060','center','bold');
+    if(G.pwKnown)text('(메모: 0917)',VW/2,y+320,15,'#c8b880','center');
+    L(`실패 ${G.pwFails%3}/3 — 3회 실패 시 경보`,13,G2,13);
+    text('숫자 입력 · Enter 확인 · Backspace 지우기 · Esc 나가기',x+w-24,y+h-18,13,G2,'right');}
+  else{L('로그인 성공. 환영합니다, 실장님.',2);
+    L('[1]  받은 메일함 (1)',4);L('[2]  피험자 데이터베이스',5);L('[3]  보안 로그',6);
+    text('번호 선택 · Esc 나가기',x+w-24,y+h-18,13,G2,'right');}
+  scanlines(x,y,w,h);
+}
 function drawTitle(){
   ctx.fillStyle='#000';ctx.fillRect(0,0,VW,VH);
   drawCover(IMG.key_island,1.02+Math.sin(performance.now()/6000)*.01,1);
@@ -775,7 +944,7 @@ function drawTitle(){
   text('PROJECT ARCHE',VW/2,170,58,`rgba(220,215,200,${fl})`,'center','bold');
   text('프로젝트 아르케: 리셋',VW/2,215,24,'#a33','center','bold');
   text('STAGE 1 — 각성   ·   1인칭 프로토타입',VW/2,250,15,'#777','center');
-  const lines=['WASD 이동   ·   마우스 시야 (화면 클릭)   ·   클릭/Space 사격','Shift 달리기 (소리가 난다)   ·   F 손전등   ·   E 살펴보기','1 / 2 무기 교체   ·   H 구급상자   ·   Tab 지도'];
+  const lines=['WASD 이동   ·   마우스 시야 (화면 클릭)   ·   클릭/Space 사격','Shift 달리기 (소리가 난다)   ·   F 손전등   ·   E 살펴보기 (서류함은 길게)','1 / 2 무기 교체   ·   H 구급상자   ·   Tab 지도'];
   lines.forEach((l,i)=>text(l,VW/2,320+i*26,15,'#999','center'));
   text('손전등을 켜면, 놈들도 당신을 본다.',VW/2,420,15,'#c8b880','center');
   if(Math.floor(performance.now()/600)%2)text('클릭하여 시작',VW/2,480,18,'#ddd','center','bold');
@@ -804,6 +973,8 @@ function render(){
   ctx.imageSmoothingEnabled=false;ctx.drawImage(buf,0,0,VW,VH);
   if(scene==='play'||scene==='doc')drawHUD();
   if(scene==='doc')drawDoc();
+  if(scene==='term')drawTerm();
+  if(scene==='cctv')drawCCTV();
   if(scene==='dead')drawDead();
   if(scene==='end')drawEnd();
 }
